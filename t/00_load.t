@@ -1,21 +1,14 @@
 use Test::More;
 use Data::Printer;
-use_ok( Pg::BulkCopy );
+use_ok( Pg::BulkLoad );
 
-my %args = (
-	dbname => 'pgbulkcopy',
-	dbhost => 'localhost',
-	dbuser => 'postgres',
-	dbpass => 'postgres',
-	errorfile => '/tmp/pgbulk.error',
-	);
+=pod
 
-my $pgc = Pg::BulkCopy->new(  %args );
+If you want to test this module look at the test folder.
+This just tests that Perl can load the module. 
+Proper testing requires a postgres server.
 
-isa_ok( $pgc, 'Pg::BulkCopy' );
-can_ok( $pgc, 'new' );
-can_ok( $pgc, 'evict' );
+=cut
 
 done_testing();
 
-p $pgc;

@@ -12,7 +12,7 @@ CREATE DATABASE pgbulkcopy
     CONNECTION LIMIT = -1;
 
 COMMENT ON DATABASE pgbulkcopy
-    IS 'Testing DataBase for PgBulkCopy.';
+    IS 'Testing DataBase for PgBulkLoad.';
 	
 -- Table: public.load1
 
