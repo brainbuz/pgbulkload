@@ -89,17 +89,6 @@ sub load ( $I, $file, $table, $format ) {
 
 Load Comma and Tab Delimited files into Postgres, skipping bad records.
 
-=head2 Reason
-
-The Postgres 'COPY FROM' lacks a mechanism for skipping bad records. Sometimes we need to ingest 'dirty' data and make the best of it.
-
-=head2 Method and Performance
-
-Pg::BulkLoad attempts to load your file via the COPY FROM command if it fails it removes the error for the bad line from its working copy of the file and logs it for later dba late night drinking er debugging game, and then  attempts to load again. If your data is clean the COPY FROM command is pretty fast, however if there are a lot of bad records, for each failure Pg::BuklLoad has to rewrite the input file. If your data has a lot of bad records small batches are recommended, for clean data performance will be better with a larger batch size. The split program will quickly split larger files, but you can split them in Perl if you prefer. 
-
-=head2 Limitation of COPY
-
-Since Pg::Bulkload passes all of the work to copy it is subject to the limitation that the source file must be readable via the file system to the postgres server (usually the postgres user). To avoid permissions problems Pg::Bulkload copies the file to /tmp for loading (leaving the original preserved if it has to evict records). Pg::BulkLoad needs to be run locally to the server, this means that your host for connection will almost always be localhost.
 
 =head1 Synopsis
 
@@ -147,10 +136,28 @@ either text or csv
 
 =back 
 
+=head2 Reason
+
+The Postgres 'COPY FROM' lacks a mechanism for skipping bad records. Sometimes we need to ingest 'dirty' data and make the best of it.
+
+=head2 Method and Performance
+
+Pg::BulkLoad attempts to load your file via the COPY FROM command if it fails it removes the error for the bad line from its working copy of the file and logs it for later dba late night drinking er debugging game, and then  attempts to load again. For efficiency it bisects the file first loading all of the records before the bad record that would have succeeded, and then attempting the rest of the data san bad record. 
+
+If your data is clean the COPY FROM command is pretty fast, however if there are a lot of bad records, for each failure Pg::BuklLoad has to rewrite the input file. If your data has a lot of bad records small batches are recommended, for clean data performance will be better with a larger batch size. The split program will quickly split larger files, but you can split them in Perl if you prefer. To keep this program simpler I've left chunking larger files up to the user.
+
+=head2 Limitation of COPY
+
+Since Pg::Bulkload passes all of the work to copy it is subject to the limitation that the source file must be readable via the file system to the postgres server (usually the postgres user). To avoid permissions problems Pg::Bulkload copies the file to /tmp for loading (leaving the original preserved if it has to evict records). Pg::BulkLoad needs to be run locally to the server, this means that your host for connection will almost always be localhost.
+
+=head2 Other Considerations
+
+The internal error counting is for the life of an instance not per data file. If you have 100 source files an error limit of 500 and there are 1000 errors in your source you likely get about half the data loaded before this module quits. You should be prepared to deal with the consequences of a partial load, or you will need to figure out how to fix your data before load.
+
 =head2 History
 
-My first CPAN module was Pg::BulkCopy, because I had this problem. I found something better that was written in C, so I deprecated my original module which needed a rewrite. Sometimes the utility I switched to doesn't want to compile, so I got tired of that, still had my problem, so I finally rewrote Pg::BulkCopy. The old module wanted to be an import/export utility, where this new one just does one thing.
+My first CPAN module was Pg::BulkCopy, because I had this problem. I found something better that was written in C, so I deprecated my original module which needed a rewrite. Sometimes the utility I switched to doesn't want to compile, so I got tired of that, still had my original problem of getting a lot of data from an external source that has a certain amount of errors, and is creative in finding new ways get bad records past my preprocessor. Pg::BulkCopy wanted to be an import/export utility, Pg::BulkLoad only deals with the core issue of getting the good data loaded.
 
 =head1 Testing
 
-For CPAN the module only tests that it can load (ie. that it is valid Perl and that you have the dependencies installed). To properly test it you'll need to setup a database using the sql file found in the test folder of the distribution and run the tests contained within.
+To properly test it you'll need to export DB_TEST to a true value in your environment before running tests. When this variable isn't set the tests mock a database for a few of the simpler tests and skip the rest.
