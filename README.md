@@ -8,7 +8,7 @@ The Postgres 'COPY FROM' lacks a mechanism for skipping bad records. Sometimes w
 
 ## Method and Performance
 
-Pg::BulkLoad attempts to load your file via the COPY FROM command if it fails it parses the error for the bad line, removes and logs it, and then writes it to /tmp and attempts to load again. If your data is clean the COPY FROM command is pretty fast, however if there are a lot of bad records, for each failure Pg::BuklLoad has to rewrite the input file. If your data has a lot of bad records small batches are recommended, for clean data performance will be better with a larger batch size. The split program will quickly split larger files, but you can split them in Perl if you prefer. 
+Pg::BulkLoad attempts to load your file via the COPY FROM command if it fails it removes the error for the bad line from its working copy of the file and logs it for later dba late night drinking er debugging game, and then  attempts to load again. If your data is clean the COPY FROM command is pretty fast, however if there are a lot of bad records, for each failure Pg::BuklLoad has to rewrite the input file. If your data has a lot of bad records small batches are recommended, for clean data performance will be better with a larger batch size. The split program will quickly split larger files, but you can split them in Perl if you prefer. 
 
 ## Limitation of COPY
 
@@ -39,6 +39,22 @@ Since Pg::Bulkload passes all of the work to copy it is subject to the limitatio
     while ( @filelist ) {
         $pgc->load( $file, $_, 'csv' );
     }
+
+## load ($file, $table, $format )
+
+Attempts to load your data. Takes 3 parameters: 
+
+- $file
+
+    the file you're trying to load.
+
+- $table
+
+    the table to load to.
+
+- $format
+
+    either text or csv
 
 ## History
 

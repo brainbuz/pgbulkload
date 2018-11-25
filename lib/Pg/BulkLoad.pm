@@ -2,31 +2,21 @@ use 5.020;
 package Pg::BulkLoad;
 use feature qw/signatures postderef/;
 no warnings qw/experimental uninitialized/;
-use Mojo::Pg;
 use Try::Tiny;
 use Path::Tiny;
-# use Data::Printer;
+use Carp;
+use Data::Printer;
+use Data::Dumper;
 
 # ABSTRACT: Bulk Load for Postgres with ability to skip bad records.
 
 sub new ( $Class, %args ) {
-	for my $required ( qw/ dbname dbhost dbuser dbpass errorfile/ ) {
-		unless ( $args{$required }) {
-			die "missing mandatory argument $required";
+	for my $required ( qw/ pg errorfile/ ) {	
+		unless ( $args{$required }) {			
+			croak "missing mandatory argument $required";
 		}
 	}
 	my $I = \%args;
-	my $pg  = Mojo::Pg->new();
-	my $dsn 
-	    = 'DBI:Pg:dbname='
-	    . $I->{dbname}
-	    . ';host='
-	    . $I->{dbhost};
-	$pg->dsn($dsn);
-	$pg->username( $I->{dbuser} );
-	$pg->password( $I->{dbpass} );
-	$I->{db} = $pg->db;
-	$I->{pg} = $pg;
 	$I->{errcount} = 0;
 	open( $I->{errors}, '>', $args{errorfile});
 	bless $I;
@@ -41,17 +31,14 @@ sub error ( $I, $msg, $row ) {
 	if ( defined $I->{errorlimit}) {
 		if ( $I->{errcount} >= $I->{errorlimit}) {
 			say $ERR  "Exceeded Error limit with $I->{errcount} Errors";
-			die "Exceeded Error limit with $I->{errcount} Errors";
+			croak "Exceeded Error limit with $I->{errcount} Errors";
 		}
 	}
 }
 
-sub load ( $I, $file, $table, $format ) {	
-	my $workfile = "/tmp/pgbulkcopywork.$format";
-	# unlink( $workfile ); 
-# warn $file;	
-# warn $workfile;	
-# 	copy( $file, $workfile) or die "Copy $file to $workfile failed: $!";
+sub load ( $I, $file, $table, $format ) {
+	my $loadedlines = 0;
+	my $workfile = "/tmp/pgbulkloadwork.$format";
 	my @data = path($file)->lines;
 	path($workfile)->spew(@data);
 
@@ -65,28 +52,34 @@ sub load ( $I, $file, $table, $format ) {
 	}
 	LOADLOOP: while ( $loopcnt < $loopmax ) {
 		$loopcnt++;
-		try { 
-			$I->{db}->query( $loadq );
+		try {
+			$I->{pg}->do( $loadq );
 			$loopmax = 0; # break free of loop on success.
 		} catch { 
-			$_ =~ m/\, line (\d+)?:/;
+			my $err = $I->{pg}->errstr;
+			$err =~ m/\, line (\d+)/;
 			my $badline = $1 -1 ; # array offset 0
-			$I->error( "Evicting Record : $_", $data[$badline] );
-			splice (@data, $badline, 1);
+			$I->error( "Evicting Record from $file : $err", $data[$badline] );
+			# remove badline
+			if ( $badline < 1 ) {
+				my $diemsg = qq/badline out of range. load error was $err\n/;
+				$I->error( $diemsg );
+				die $diemsg;
+			}
+			splice (@data, $badline, 1); 
+			# make new array of goodlines before badline
+			my @goodlines = splice (@data, 0, $badline -1  );
+			# try to load just goodlines.	
+			path($workfile)->spew(@goodlines);
+			try { $I->{pg}->do( $loadq ) ; $loadedlines += scalar @goodlines }	
+			catch { croak "retry load of good chunk failed can\'t continue\n"
+				. $I->{pg}->errstr . "\n" } ;
+			# write remaining data and repeat loopNN
 			path($workfile)->spew(@data);
 		};
  	}
-	return scalar( @data );	
+	return $loadedlines + scalar( @data );
 }
-
-sub process ( $I, $file, $table, $format ) {
-	# copy the file to /tmp so postgres can access it and 
-	# eviction doesn't alter original data.
-	my $workfile = "/tmp/pgbulkcopywork.$format";
- 	copy( $file, $workfile) or die "Copy failed: $!";
-
-}
-
 
 1;
 
@@ -102,7 +95,7 @@ The Postgres 'COPY FROM' lacks a mechanism for skipping bad records. Sometimes w
 
 =head2 Method and Performance
 
-Pg::BulkLoad attempts to load your file via the COPY FROM command if it fails it parses the error for the bad line, removes and logs it, and then writes it to /tmp and attempts to load again. If your data is clean the COPY FROM command is pretty fast, however if there are a lot of bad records, for each failure Pg::BuklLoad has to rewrite the input file. If your data has a lot of bad records small batches are recommended, for clean data performance will be better with a larger batch size. The split program will quickly split larger files, but you can split them in Perl if you prefer. 
+Pg::BulkLoad attempts to load your file via the COPY FROM command if it fails it removes the error for the bad line from its working copy of the file and logs it for later dba late night drinking er debugging game, and then  attempts to load again. If your data is clean the COPY FROM command is pretty fast, however if there are a lot of bad records, for each failure Pg::BuklLoad has to rewrite the input file. If your data has a lot of bad records small batches are recommended, for clean data performance will be better with a larger batch size. The split program will quickly split larger files, but you can split them in Perl if you prefer. 
 
 =head2 Limitation of COPY
 
@@ -133,6 +126,26 @@ Since Pg::Bulkload passes all of the work to copy it is subject to the limitatio
  while ( @filelist ) {
      $pgc->load( $file, $_, 'csv' );
  }
+
+=head2 load ($file, $table, $format )
+
+Attempts to load your data. Takes 3 parameters: 
+
+=over
+
+=item $file
+
+the file you're trying to load.
+
+=item $table
+
+the table to load to.
+
+=item $format
+
+either text or csv
+
+=back 
 
 =head2 History
 

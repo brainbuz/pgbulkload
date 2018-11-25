@@ -1,2 +1,3 @@
 *.gz
 Pg-BulkLoad*
+.build

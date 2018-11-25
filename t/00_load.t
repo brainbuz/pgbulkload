@@ -1,14 +1,27 @@
 use Test::More;
 use Data::Printer;
-use_ok( Pg::BulkLoad );
+use Test::MockObject;
 
-=pod
+if ( $OSNAME =~ /win/ ) {
+    unless ( $OSNAME =~ /cygwin/ ) {
+        BAIL_OUT(
+            'Windows is not a currently supported OS. 
+		Cygwin might work but not ActivePerl or Strawberry Perl.'
+        );
+    }
+}
 
-If you want to test this module look at the test folder.
-This just tests that Perl can load the module. 
-Proper testing requires a postgres server.
+use_ok(Pg::BulkLoad);
 
-=cut
+my %args = (
+    pg        => Test::MockObject->new(),
+    errorfile => '/tmp/pgbulk.error',
+);
+
+my $pgc = Pg::BulkLoad->new(%args);
+
+isa_ok( $pgc, 'Pg::BulkLoad' );
+can_ok( $pgc, 'new' );
+can_ok( $pgc, 'load' );
 
 done_testing();
-
