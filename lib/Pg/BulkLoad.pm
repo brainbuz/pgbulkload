@@ -142,9 +142,9 @@ The Postgres 'COPY FROM' lacks a mechanism for skipping bad records. Sometimes w
 
 =head2 Method and Performance
 
-Pg::BulkLoad attempts to load your file via the COPY FROM command if it fails it removes the error for the bad line from its working copy of the file and logs it for later dba late night drinking er debugging game, and then  attempts to load again. For efficiency it bisects the file first loading all of the records before the bad record that would have succeeded, and then attempting the rest of the data san bad record. 
+Pg::BulkLoad attempts to load your file via the COPY FROM command if it fails it removes the error for the bad line from its working copy, then attempts to load all of the records previous to the error, and then tries to load the remaining data after the failure. 
 
-If your data is clean the COPY FROM command is pretty fast, however if there are a lot of bad records, for each failure Pg::BuklLoad has to rewrite the input file. If your data has a lot of bad records small batches are recommended, for clean data performance will be better with a larger batch size. The split program will quickly split larger files, but you can split them in Perl if you prefer. To keep this program simpler I've left chunking larger files up to the user.
+If your data is clean the COPY FROM command is pretty fast, however if there are a lot of bad records, for each failure Pg::BuklLoad has to rewrite the input file. If your data has a lot of bad records small batches are recommended, for clean data performance will be better with a larger batch size. The split program will quickly split larger files, but you can split them in Perl if you prefer. To keep this program simpler I've left chunking larger files up to the user. Pg::BulkLoad does load data into memory which will create a practical maximum file.
 
 =head2 Limitation of COPY
 
@@ -152,7 +152,7 @@ Since Pg::Bulkload passes all of the work to copy it is subject to the limitatio
 
 =head2 Other Considerations
 
-The internal error counting is for the life of an instance not per data file. If you have 100 source files an error limit of 500 and there are 1000 errors in your source you likely get about half the data loaded before this module quits. You should be prepared to deal with the consequences of a partial load, or you will need to figure out how to fix your data before load.
+The internal error counting is for the life of an instance not per data file. If you have 100 source files an error limit of 500 and there are 1000 errors in your source you will likely get about half the data loaded before this module quits. You should be prepared to deal with the consequences of a partial load.
 
 =head2 History
 
@@ -160,4 +160,4 @@ My first CPAN module was Pg::BulkCopy, because I had this problem. I found somet
 
 =head1 Testing
 
-To properly test it you'll need to export DB_TEST to a true value in your environment before running tests. When this variable isn't set the tests mock a database for a few of the simpler tests and skip the rest.
+To properly test it you'll need to export DB_TESTING to a true value in your environment before running tests. When this variable isn't set the tests mock a database for a few of the simpler tests and skip the rest.
