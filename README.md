@@ -1,3 +1,11 @@
+# NAME
+
+Pg::BulkLoad - Bulk Load for Postgres with ability to skip bad records.
+
+# VERSION
+
+version 2.03
+
 # Pg::BulkLoad
 
 Load Comma and Tab Delimited files into Postgres, skipping bad records.
@@ -12,10 +20,7 @@ Load Comma and Tab Delimited files into Postgres, skipping bad records.
     use Pg::BulkCopy;
 
     my %args = (
-           dbname => 'pgbulkcopy',
-           dbhost => 'localhost',
-           dbuser => 'postgres',
-           dbpass => 'postgres',
+           pg => DBI->connect("dbi:Pg:dbname=$dbname", '', '', {AutoCommit => 0}),
            errorfile => '/tmp/pgbulk.error',
            errorlimit => 500,
            );
@@ -27,6 +32,16 @@ Load Comma and Tab Delimited files into Postgres, skipping bad records.
     while ( @filelist ) {
         $pgc->load( $file, $_, 'csv' );
     }
+
+## new 
+
+Takes arguments in hash format:
+
+    pg => DBD::Pg database_handle (mandatory),
+
+    errorfile => A file to log errors to (mandatory),
+
+    errorcount => a limit of errors before giving up (optional)
 
 ## load ($file, $table, $format )
 
@@ -52,7 +67,7 @@ The Postgres 'COPY FROM' lacks a mechanism for skipping bad records. Sometimes w
 
 Pg::BulkLoad attempts to load your file via the COPY FROM command if it fails it removes the error for the bad line from its working copy, then attempts to load all of the records previous to the error, and then tries to load the remaining data after the failure. 
 
-If your data is clean the COPY FROM command is pretty fast, however if there are a lot of bad records, for each failure Pg::BuklLoad has to rewrite the input file. If your data has a lot of bad records small batches are recommended, for clean data performance will be better with a larger batch size. The split program will quickly split larger files, but you can split them in Perl if you prefer. To keep this program simpler I've left chunking larger files up to the user. Pg::BulkLoad does load data into memory which will create a practical maximum file.
+If your data is clean the COPY FROM command is pretty fast, however if there are a lot of bad records, for each failure Pg::BuklLoad has to rewrite the input file. If your data has a lot of bad records small batches are recommended, for clean data performance will be better with a larger batch size. To keep this program simpler I've left chunking larger files up to the user. The split program will quickly split larger files, but you can split them in Perl if you prefer. Pg::BulkLoad does hold the entire data file in memory (to improve performance on dirty files) this will create a practical maximum file size.
 
 ## Limitation of COPY
 
@@ -69,3 +84,15 @@ My first CPAN module was Pg::BulkCopy, because I had this problem. I found somet
 # Testing
 
 To properly test it you'll need to export DB\_TESTING to a true value in your environment before running tests. When this variable isn't set the tests mock a database for a few of the simpler tests and skip the rest.
+
+# AUTHOR
+
+John Karr <brainbuz@brainbuz.org>
+
+# COPYRIGHT AND LICENSE
+
+This software is Copyright (c) 2018 by John Karr.
+
+This is free software, licensed under:
+
+    The GNU General Public License, Version 3, June 2007
