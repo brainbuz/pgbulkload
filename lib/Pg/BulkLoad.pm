@@ -100,13 +100,11 @@ Load Comma and Tab Delimited files into Postgres, skipping bad records.
 
  use Pg::BulkCopy;
 
- my %args = (
-	pg => DBI->connect("dbi:Pg:dbname=$dbname", '', '', {AutoCommit => 0}),
+ my $pgc = Pg::BulkLoad->new(  
+ 	pg => DBI->connect("dbi:Pg:dbname=$dbname", '', '', {AutoCommit => 0}),
 	errorfile => '/tmp/pgbulk.error',
 	errorlimit => 500,
-	);
-
- my $pgc = Pg::BulkLoad->new(  %args );
+ );
 
  .... # your code to read file names and possibly manipulate files contents prior to load.
 
@@ -119,11 +117,8 @@ Load Comma and Tab Delimited files into Postgres, skipping bad records.
 Takes arguments in hash format:
 
  pg => DBD::Pg database_handle (mandatory),
-
  errorfile => A file to log errors to (mandatory),
-
  errorcount => a limit of errors before giving up (optional)
-
 
 =head2 load ($file, $table, $format )
 
