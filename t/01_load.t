@@ -236,6 +236,13 @@ like(
 
 }; # skip
 
+# Tests for issue with undefined values being passed to internal
+# _error method.
+
+my $pgc3 = Pg::BulkLoad->new(%args);
+dies_ok { $pgc3->_error() } 'no args sent to _error method' ;
+dies_ok { $pgc3->_error( 'only one arg') } 'only one arg sent to _error method' ;
+
 # $pgc->process( 't/loadbad1.csv', 'load1', 'csv');
 
 # my $r = $pgc->{db}->query('select count(*) from load1')->array->[0];

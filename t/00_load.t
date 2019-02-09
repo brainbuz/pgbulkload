@@ -2,14 +2,15 @@ use Test::More;
 use Data::Printer;
 use Test::MockObject;
 
-if ( $OSNAME =~ /win/ ) {
-    unless ( $OSNAME =~ /cygwin/ ) {
-        BAIL_OUT(
-            'Windows is not a currently supported OS. 
-		Cygwin might work but not ActivePerl or Strawberry Perl.'
-        );
-    }
-}
+# this isn't working since cpan testers are passing
+# if ( $OSNAME =~ /win/ ) {
+#     unless ( $OSNAME =~ /cygwin/ ) {
+#         BAIL_OUT(
+#             'Windows is not a currently supported OS. 
+# 		Cygwin might work but not ActivePerl or Strawberry Perl.'
+#         );
+#     }
+# }
 
 use_ok(Pg::BulkLoad);
 

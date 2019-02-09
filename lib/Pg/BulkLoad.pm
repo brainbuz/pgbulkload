@@ -10,6 +10,8 @@ use Data::Dumper;
 
 # ABSTRACT: Bulk Load for Postgres with ability to skip bad records.
 
+our $VERSION='2.05';
+
 sub new ( $Class, %args ) {
 	for my $required ( qw/ pg errorfile/ ) {	
 		unless ( $args{$required }) {			
@@ -23,7 +25,15 @@ sub new ( $Class, %args ) {
 	return $I;
 }
 
-sub _error ( $I, $msg, $row ) {
+# There was a live data run where no value was passed
+# for row, accepting undef for msg and row and then
+# croaking.
+sub _error ( $I, $msg=undef, $row=undef ) {
+	if( $msg eq undef ) { 
+			croak 'internal error no message, possible bug.'}
+	if( $row eq undef ) { 
+			croak "$msg\ninternal error no row in scope, possible bad data format. "
+		}
 	$I->{errcount}++;
 	my $ERR = $I->{errors};
 	say $ERR $msg;
@@ -90,6 +100,7 @@ sub load ( $I, $file, $table, $format ) {
 
 Load Comma and Tab Delimited files into Postgres, skipping bad records.
 
+=head1 VERSION 2.05
 
 =head1 Synopsis
 

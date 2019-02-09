@@ -4,11 +4,13 @@ Pg::BulkLoad - Bulk Load for Postgres with ability to skip bad records.
 
 # VERSION
 
-version 2.031
+version 2.04
 
 # Pg::BulkLoad
 
 Load Comma and Tab Delimited files into Postgres, skipping bad records.
+
+# VERSION 2.04
 
 # Synopsis
 
