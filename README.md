@@ -4,13 +4,13 @@ Pg::BulkLoad - Bulk Load for Postgres with ability to skip bad records.
 
 # VERSION
 
-version 2.04
+version 2.05
 
 # Pg::BulkLoad
 
 Load Comma and Tab Delimited files into Postgres, skipping bad records.
 
-# VERSION 2.04
+# VERSION 2.05
 
 # Synopsis
 
@@ -19,21 +19,20 @@ Load Comma and Tab Delimited files into Postgres, skipping bad records.
 
     === myloadscript.pl ===
 
-    use Pg::BulkCopy;
+     use Pg::BulkCopy;
 
-    my $pgc = Pg::BulkLoad->new(  
-           pg => DBI->connect("dbi:Pg:dbname=$dbname", '', '', {AutoCommit => 0}),
-           errorfile => '/tmp/pgbulk.error',
-           errorlimit => 500,
-    );
+     my $pgc = Pg::BulkLoad->new(
+       pg => DBI->connect("dbi:Pg:dbname=$dbname", '', '', {AutoCommit => 0}),
+       errorfile => '/tmp/pgbulk.error',
+       errorlimit => 500,
+     );
 
-    .... # your code to read file names and possibly manipulate files contents prior to load.
+     # to take a table name followed by the file names from the command line
+     # use the following:
+     my $table = shift @ARGV;
+     for my $file ( @ARGV ) { $pgc->load( $file, $table, 'csv' ) }
 
-    while ( @filelist ) {
-        $pgc->load( $file, $_, 'csv' );
-    }
-
-## new 
+## new
 
 Takes arguments in hash format:
 
@@ -43,7 +42,7 @@ Takes arguments in hash format:
 
 ## load ($file, $table, $format )
 
-Attempts to load your data. Takes 3 parameters: 
+Attempts to load your data. Takes 3 parameters:
 
 - $file
 
@@ -63,7 +62,7 @@ The Postgres 'COPY FROM' lacks a mechanism for skipping bad records. Sometimes w
 
 ## Method and Performance
 
-Pg::BulkLoad attempts to load your file via the COPY FROM command if it fails it removes the error for the bad line from its working copy, then attempts to load all of the records previous to the error, and then tries to load the remaining data after the failure. 
+Pg::BulkLoad attempts to load your file via the COPY FROM command if it fails it removes the error for the bad line from its working copy, then attempts to load all of the records previous to the error, and then tries to load the remaining data after the failure.
 
 If your data is clean the COPY FROM command is pretty fast, however if there are a lot of bad records, for each failure Pg::BuklLoad has to rewrite the input file. If your data has a lot of bad records small batches are recommended, for clean data performance will be better with a larger batch size. To keep this program simpler I've left chunking larger files up to the user. The split program will quickly split larger files, but you can split them in Perl if you prefer. Pg::BulkLoad does hold the entire data file in memory (to improve performance on dirty files) this will create a practical maximum file size.
 

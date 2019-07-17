@@ -1,8 +1,9 @@
 Revision history for Pg::BulkLoad
+2.05   17 July 2019 Documentation
 2.04   06 Feb 2019
 Fixed error messages to croak with better explanation if
    the call to _error was missing information.
-2.031   08 December 2018 
+2.031   08 December 2018
 fixed typo in pod.
 2.03    07 December 2018
 Revised Pod fixed coverage
