@@ -10,7 +10,7 @@ use Data::Dumper;
 
 # ABSTRACT: Bulk Load for Postgres with ability to skip bad records.
 
-our $VERSION='2.05';
+our $VERSION='2.06';
 
 sub new ( $Class, %args ) {
 	for my $required ( qw/ pg errorfile/ ) {
@@ -100,27 +100,28 @@ sub load ( $I, $file, $table, $format ) {
 
 Load Comma and Tab Delimited files into Postgres, skipping bad records.
 
-=head1 VERSION 2.05
-
 =head1 Synopsis
 
+This example will take a table name followed by file names (wildcards allowed) from the command
+line and load the data.
+
  Shell> split -l 50000 -a 3 -d mydata.csv load
- Shell> myloadscript.pl load*
+ Shell> myloadscript.pl tablename load*
 
  === myloadscript.pl ===
 
-  use Pg::BulkCopy;
+  use Pg::BulkLoad;
 
   my $pgc = Pg::BulkLoad->new(
-    pg => DBI->connect("dbi:Pg:dbname=$dbname", '', '', {AutoCommit => 0}),
+    pg => DBI->connect("dbi:Pg:dbname=$dbname", $username, $password, {AutoCommit => 0}),
     errorfile => '/tmp/pgbulk.error',
     errorlimit => 500,
   );
 
-  # to take a table name followed by the file names from the command line
-  # use the following:
   my $table = shift @ARGV;
-  for my $file ( @ARGV ) { $pgc->load( $file, $table, 'csv' ) }
+  my @files = map { `ls -b $_`} @ARGV ;
+  chomp @files;
+  for my $file ( @files ) { $pgc->load( $file, $table, 'csv' ) }
 
 =head2 new
 

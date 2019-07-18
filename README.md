@@ -4,33 +4,36 @@ Pg::BulkLoad - Bulk Load for Postgres with ability to skip bad records.
 
 # VERSION
 
-version 2.05
+version 2.06
 
 # Pg::BulkLoad
 
 Load Comma and Tab Delimited files into Postgres, skipping bad records.
 
-# VERSION 2.05
+# VERSION 2.06
 
 # Synopsis
 
+This example will take a table name followed by file names (wildcards allowed) from the command
+line and load the data.
+
     Shell> split -l 50000 -a 3 -d mydata.csv load
-    Shell> myloadscript.pl load*
+    Shell> myloadscript.pl tablename load*
 
     === myloadscript.pl ===
 
-     use Pg::BulkCopy;
+     use Pg::BulkLoad;
 
      my $pgc = Pg::BulkLoad->new(
-       pg => DBI->connect("dbi:Pg:dbname=$dbname", '', '', {AutoCommit => 0}),
+       pg => DBI->connect("dbi:Pg:dbname=$dbname", $username, $password, {AutoCommit => 0}),
        errorfile => '/tmp/pgbulk.error',
        errorlimit => 500,
      );
 
-     # to take a table name followed by the file names from the command line
-     # use the following:
      my $table = shift @ARGV;
-     for my $file ( @ARGV ) { $pgc->load( $file, $table, 'csv' ) }
+     my @files = map { `ls -b $_`} @ARGV ;
+     chomp @files;
+     for my $file ( @files ) { $pgc->load( $file, $table, 'csv' ) }
 
 ## new
 
@@ -73,6 +76,19 @@ Since Pg::Bulkload passes all of the work to copy it is subject to the limitatio
 ## Other Considerations
 
 The internal error counting is for the life of an instance not per data file. If you have 100 source files an error limit of 500 and there are 1000 errors in your source you will likely get about half the data loaded before this module quits. You should be prepared to deal with the consequences of a partial load.
+
+## Extra Help for Perl Novices
+
+### DBI Connection
+
+The example assumes that you'll set variables for your dbname, user and password. Optionally you could make them command line parameters with this code:
+
+    my $dbname = shift @ARGV;
+    my $username = shift @ARGV;
+    my $password = shift @ARGV;
+    my $tablename = shift @ARGV;
+
+Or you could assign a value to any of those. The keyword **my** is variable declaration, **@ARGV** is Perl's name for the command line arguments.
 
 ## History
 
