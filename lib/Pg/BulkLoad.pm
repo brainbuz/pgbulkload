@@ -96,11 +96,11 @@ sub load ( $I, $file, $table, $format ) {
 
 =pod
 
-=head1 Pg::BulkLoad
+=head1 DESCRIPTION
 
 Load Comma and Tab Delimited files into Postgres, skipping bad records.
 
-=head1 Synopsis
+=head1 SYNOPSIS
 
 This example will take a table name followed by file names (wildcards allowed) from the command
 line and load the data.
